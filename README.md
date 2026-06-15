@@ -1,8 +1,16 @@
 # project_orchestration_ml
 
-Project to predict price of cars
+Project to predict used car prices and identify optimal investment opportunities.
 
-In wich car invest to maximize profit ?
+## Context & Problematic
+
+**How to identify the best used cars to buy and resell to maximize profit?**
+
+This project aims to build an end-to-end Machine Learning pipeline to:
+1. **Predict** the fair market price of a used car (using XGBoost/LightGBM/RF).
+2. **Identify** undervalued cars (where listed price < predicted price) to find the best ROI.
+3. **Orchestrate** the workflow using MLflow (tracking), FastAPI (API serving), and Streamlit (user interface), all managed via Docker and a Makefile.
+
 
 ## data
 
