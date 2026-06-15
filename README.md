@@ -4,7 +4,7 @@ Project to predict used car prices and identify optimal investment opportunities
 
 ## Context & Problematic
 
-**How to identify the best used cars to buy and resell to maximize profit?**
+**What is the price of a car?**
 
 This project aims to build an end-to-end Machine Learning pipeline to:
 1. **Predict** the fair market price of a used car (using XGBoost/LightGBM/RF).

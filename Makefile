@@ -106,10 +106,11 @@ data: ## Prepare/genere le jeu de donnees dans data/
 train: ## Entraine la baseline -> models/model.joblib (C=.. MAX_ITER=..)
 	uv run python -m src.train
 
-train-models: ## Compare RF / XGBoost / LightGBM (GridSearchCV) + SHAP (CV=.. SCORING=..)
-	# TODO (S7) : $(PYTHON) -m mlproject.train_models --cv $(CV) --scoring $(SCORING)
+MODEL ?= xgboost
+train-models: ## Compare MLP / XGBoost / LightGBM (MODEL=xgboost|lightgbm|mlp)
+	uv run python -m src.train_models --model $(MODEL)
 
-train-optuna: ## Optimise RF / XGBoost / LightGBM avec Optuna (N_TRIALS=.. CV=..)
+train-optuna: ## Optimise MLP / XGBoost / LightGBM avec Optuna (N_TRIALS=.. CV=..)
 	# TODO (S6) : $(PYTHON) -m mlproject.train_optuna --n-trials $(N_TRIALS) --cv $(CV)
 
 mlflow: ## Demarre le serveur MLflow (docker compose)

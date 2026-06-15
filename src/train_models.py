@@ -1,8 +1,6 @@
-"""Entrainement du modele de regression (baseline).
+"""Entrainement de modeles avances pour la prediction du prix des voitures.
 
-Seance 5 - TP MLflow Tracking
-    Ce script entraine et evalue un modele SANS aucun suivi d'experience.
-    Votre mission : instrumenter cet entrainement avec MLflow (voir les TODO).
+Ce script permet de choisir dynamiquement le modele a entrainer via argparse.
 """
 from __future__ import annotations
 
@@ -12,7 +10,9 @@ import math
 import os
 
 import joblib
-from sklearn.linear_model import Ridge
+from xgboost import XGBRegressor
+from lightgbm import LGBMRegressor
+from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 
@@ -27,17 +27,25 @@ import matplotlib.pyplot as plt
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-def build_model(alpha: float = 1.0) -> Pipeline:
-    """Construit un pipeline de regression avec penalite L2 (Ridge)."""
+def build_model(model_name: str) -> Pipeline:
+    """Construit un pipeline avec le modele specifie."""
+    if model_name == "xgboost":
+        regressor = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42, verbosity=2)
+    elif model_name == "lightgbm":
+        regressor = LGBMRegressor(n_estimators=100, learning_rate=0.1, random_state=42, verbose=1)
+    elif model_name == "mlp":
+        regressor = MLPRegressor(hidden_layer_sizes=(10, 5), max_iter=50, random_state=42, verbose=True)
+    else:
+        raise ValueError(f"Modele non supporte : {model_name}")
+
     return Pipeline(
         steps=[
             ("preprocessor", build_preprocessor()),
-            ("regressor", Ridge(alpha=alpha)),
+            ("regressor", regressor),
         ]
     )
 
-
-def train(alpha: float = 1.0) -> dict:
+def train(model_name: str) -> dict:
     logger.info("Chargement des donnees...")
     df = load_data()
     
@@ -51,14 +59,24 @@ def train(alpha: float = 1.0) -> dict:
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(MLFLOW_EXPERIMENT)
 
-    run_name = f"Ridge_alpha={alpha}"
+    pipeline = build_model(model_name)
+    regressor = pipeline.named_steps["regressor"]
+    
+    if model_name in ["xgboost", "lightgbm"]:
+        run_name = f"{model_name.upper()}_n={regressor.n_estimators}_lr={regressor.learning_rate}"
+    elif model_name == "mlp":
+        run_name = f"MLP_layers={regressor.hidden_layer_sizes}_iter={regressor.max_iter}"
+    else:
+        run_name = model_name
+
     with mlflow.start_run(run_name=run_name):
-        logger.info(f"Debut de l'entrainement du modele (Ridge alpha={alpha})...")
-        model = build_model(alpha=alpha)
-        model.fit(x_train, y_train)
+        logger.info(f"Debut de l'entrainement du modele ({model_name})...")
+        
+        # Le pipeline encapsule le preprocess et le regresseur
+        pipeline.fit(x_train, y_train)
 
         logger.info("Entrainement termine. Prediction sur l'ensemble de test...")
-        preds = model.predict(x_test)
+        preds = pipeline.predict(x_test)
         
         mse = mean_squared_error(y_test, preds)
         rmse = math.sqrt(mse)
@@ -73,9 +91,15 @@ def train(alpha: float = 1.0) -> dict:
         logger.info(f"Resultats : RMSE={metrics['rmse']:.3f} | MAE={metrics['mae']:.3f} | R2={metrics['r2']:.3f}")
 
         logger.info("Envoi des metadonnees et du modele a MLflow...")
-        mlflow.log_params({"alpha": alpha})
+        mlflow.log_param("model_name", model_name)
+        
+        # Recuperation du regresseur dans le pipeline pour logguer ses parametres
+        regressor = pipeline.named_steps["regressor"]
+        mlflow.log_params(regressor.get_params())
+        
         mlflow.log_metrics(metrics)
-        mlflow.sklearn.log_model(model, "model")
+        # On loggue le pipeline entier (qui inclut le preprocessing)
+        mlflow.sklearn.log_model(pipeline, "model")
         
         # Creation et log du graphique
         fig, ax = plt.subplots()
@@ -83,7 +107,7 @@ def train(alpha: float = 1.0) -> dict:
         ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
         ax.set_xlabel("Vrai Prix")
         ax.set_ylabel("Prix Predit")
-        ax.set_title("Vrai Prix vs Prix Predit")
+        ax.set_title(f"Vrai Prix vs Prix Predit ({model_name})")
         plt.tight_layout()
         fig.savefig("scatter.png")
         mlflow.log_artifact("scatter.png")
@@ -91,17 +115,21 @@ def train(alpha: float = 1.0) -> dict:
         os.remove("scatter.png")
 
         MODEL_DIR.mkdir(parents=True, exist_ok=True)
-        joblib.dump(model, MODEL_DIR / "model.joblib")
+        joblib.dump(pipeline, MODEL_DIR / f"model_{model_name}.joblib")
         
     return metrics
 
-
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--alpha", type=float, default=1.0)
+    parser.add_argument(
+        "--model", 
+        type=str, 
+        choices=["xgboost", "lightgbm", "mlp"], 
+        required=True, 
+        help="Choix du modele a entrainer (xgboost, lightgbm ou mlp)"
+    )
     args = parser.parse_args()
-    train(alpha=args.alpha)
-
+    train(model_name=args.model)
 
 if __name__ == "__main__":
     main()
