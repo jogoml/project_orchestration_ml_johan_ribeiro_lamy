@@ -11,6 +11,11 @@ This project aims to build an end-to-end Machine Learning pipeline to:
 2. **Identify** undervalued cars (where listed price < predicted price) to find the best ROI.
 3. **Orchestrate** the workflow using MLflow (tracking), FastAPI (API serving), and Streamlit (user interface), all managed via Docker and a Makefile.
 
+## Installation
+
+```bash
+make install
+```
 
 ## data
 
