@@ -19,4 +19,4 @@ https://www.kaggle.com/datasets/sharmajicoder/used-car-price-prediction-dataset
 
 And extract : 
 used_car_price_prediction_1M.csv
-in the data folder : data/
+in the data folder : data/used_car_price_prediction_1M.csv
