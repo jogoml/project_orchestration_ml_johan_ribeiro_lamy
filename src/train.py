@@ -15,7 +15,7 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 
-from src.config import MODEL_DIR
+from src.config import MODEL_DIR, MODEL_NAME
 from src.data import load_data, split
 from src.features import build_preprocessor, create_features
 from src.tracking import (
@@ -74,7 +74,7 @@ def train(alpha: float = 1.0) -> dict:
         logger.info("Envoi des metadonnees et du modele a MLflow...")
         log_params({"alpha": alpha})
         log_metrics(metrics)
-        log_model(model, "model")
+        log_model(model, "model", registered_model_name=MODEL_NAME)
         
         # Creation et log du graphique
         log_scatter_plot(y_test, preds, title="Vrai Prix vs Prix Predit")

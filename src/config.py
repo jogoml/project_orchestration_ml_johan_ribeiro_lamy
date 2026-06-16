@@ -51,3 +51,7 @@ RANDOM_STATE = 42
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 MLFLOW_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT", "used-cars-regression")
 MODEL_NAME = os.getenv("MODEL_NAME", "price_predictor")
+
+# Seuils pour la Quality Gate (evaluate.py)
+EVAL_RMSE_MAX = float(os.getenv("EVAL_RMSE_MAX", "750000.0"))
+EVAL_R2_MIN = float(os.getenv("EVAL_R2_MIN", "0.70"))

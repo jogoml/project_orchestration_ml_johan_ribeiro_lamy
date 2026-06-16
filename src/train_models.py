@@ -20,7 +20,7 @@ from sklearn import set_config
 
 set_config(transform_output="pandas")
 
-from src.config import MODEL_DIR
+from src.config import MODEL_DIR, MODEL_NAME
 from src.data import load_data, split
 from src.features import build_preprocessor, create_features
 from src.tracking import (
@@ -127,7 +127,7 @@ def train(model_name: str, cv: int = 2) -> dict:
         
         log_metrics(metrics)
         # On loggue le meilleur pipeline (qui inclut le preprocessing)
-        log_model(best_model, "model")
+        log_model(best_model, "model", registered_model_name=MODEL_NAME)
         
         # Creation et log du graphique
         log_scatter_plot(y_test, preds, title=f"Vrai Prix vs Prix Predit ({model_name})")

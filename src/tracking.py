@@ -53,9 +53,9 @@ def log_metrics(metrics: dict) -> None:
     mlflow.log_metrics(metrics)
 
 
-def log_model(model, artifact_path: str = "model") -> None:
-    """Logger un modele scikit-learn."""
-    mlflow.sklearn.log_model(model, artifact_path)
+def log_model(model, artifact_path: str = "model", registered_model_name: str | None = None) -> None:
+    """Logger un modele scikit-learn et l'enregistrer dans le Model Registry."""
+    mlflow.sklearn.log_model(model, artifact_path, registered_model_name=registered_model_name)
 
 
 def log_scatter_plot(y_true, y_pred, title: str = "Vrai Prix vs Prix Predit", filename: str = "scatter.png") -> None:
