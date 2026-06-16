@@ -16,8 +16,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 from sklearn import set_config
 
-set_config(transform_output="pandas")
-
 from src.config import MODEL_DIR, MODEL_NAME
 from src.data import load_data, split
 from src.features import build_preprocessor, create_features
@@ -25,6 +23,8 @@ from src.tracking import (
     setup_experiment, log_dataset, start_run, log_param, log_params, 
     log_metrics, log_model, log_scatter_plot
 )
+
+set_config(transform_output="pandas")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)

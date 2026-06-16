@@ -4,8 +4,9 @@ from __future__ import annotations
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
+import logging
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler, PolynomialFeatures
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from src.config import CATEGORICAL_FEATURES, NUMERIC_FEATURES
 

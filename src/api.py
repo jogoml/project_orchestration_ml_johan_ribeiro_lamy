@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 import os
 
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
