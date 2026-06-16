@@ -1,0 +1,32 @@
+name: CI Quality Check
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Run linter (ruff)
+        run: make lint
+
+      - name: Run type checker (mypy)
+        run: make type
+
+      - name: Run tests (pytest)
+        run: make test
