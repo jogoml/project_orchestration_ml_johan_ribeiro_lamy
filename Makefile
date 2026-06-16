@@ -114,7 +114,7 @@ train-optuna: ## Optimise avec Optuna (MODEL=xgboost|lightgbm|mlp N_TRIALS=.. CV
 	uv run python -m src.train_optuna --model $(MODEL) --n-trials $(N_TRIALS) --cv $(CV)
 
 mlflow: ## Demarre le serveur MLflow (docker compose)
-	# TODO (S5) : docker compose -f docker-compose.yml up -d mlflow
+	uv run python -m mlflow ui
 
 api: ## Lance l'API FastAPI en rechargement auto (voir API_HOST/API_PORT)
 	uv run python -m uvicorn src.api:app --reload --host $(API_HOST) --port $(API_PORT)
