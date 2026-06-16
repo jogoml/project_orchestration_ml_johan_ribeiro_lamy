@@ -9,20 +9,19 @@ from __future__ import annotations
 import argparse
 import logging
 import math
-import os
 
 import joblib
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 
-from src.config import MODEL_DIR, MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT
+from src.config import MODEL_DIR
 from src.data import load_data, split
 from src.features import build_preprocessor, create_features
-
-import mlflow
-import mlflow.sklearn
-import matplotlib.pyplot as plt
+from src.tracking import (
+    setup_experiment, log_dataset, start_run, log_params, log_metrics, 
+    log_model, log_scatter_plot
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -47,12 +46,12 @@ def train(alpha: float = 1.0) -> dict:
     logger.info("Decoupage en ensembles d'entrainement et de test...")
     x_train, x_test, y_train, y_test = split(df)
 
-    logger.info(f"Configuration MLflow : URI={MLFLOW_TRACKING_URI}")
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-    mlflow.set_experiment(MLFLOW_EXPERIMENT)
+    logger.info("Configuration MLflow via tracking.py...")
+    setup_experiment()
 
     run_name = f"Ridge_alpha={alpha}"
-    with mlflow.start_run(run_name=run_name):
+    with start_run(run_name=run_name):
+        log_dataset(df, context="training")
         logger.info(f"Debut de l'entrainement du modele (Ridge alpha={alpha})...")
         model = build_model(alpha=alpha)
         model.fit(x_train, y_train)
@@ -73,22 +72,12 @@ def train(alpha: float = 1.0) -> dict:
         logger.info(f"Resultats : RMSE={metrics['rmse']:.3f} | MAE={metrics['mae']:.3f} | R2={metrics['r2']:.3f}")
 
         logger.info("Envoi des metadonnees et du modele a MLflow...")
-        mlflow.log_params({"alpha": alpha})
-        mlflow.log_metrics(metrics)
-        mlflow.sklearn.log_model(model, "model")
+        log_params({"alpha": alpha})
+        log_metrics(metrics)
+        log_model(model, "model")
         
         # Creation et log du graphique
-        fig, ax = plt.subplots()
-        ax.scatter(y_test, preds, alpha=0.3)
-        ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
-        ax.set_xlabel("Vrai Prix")
-        ax.set_ylabel("Prix Predit")
-        ax.set_title("Vrai Prix vs Prix Predit")
-        plt.tight_layout()
-        fig.savefig("scatter.png")
-        mlflow.log_artifact("scatter.png")
-        plt.close(fig)
-        os.remove("scatter.png")
+        log_scatter_plot(y_test, preds, title="Vrai Prix vs Prix Predit")
 
         MODEL_DIR.mkdir(parents=True, exist_ok=True)
         joblib.dump(model, MODEL_DIR / "model.joblib")
