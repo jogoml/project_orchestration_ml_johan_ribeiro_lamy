@@ -37,23 +37,23 @@ def build_model(model_name: str) -> Tuple[Pipeline, Dict[str, Any]]:
     if model_name == "xgboost":
         regressor = XGBRegressor(random_state=42, verbosity=0)
         param_grid = {
-            "regressor__n_estimators": [300, 400],
+            "regressor__n_estimators": [100, 200],
             "regressor__learning_rate": [0.05, 0.1],
             "regressor__max_depth": [5, 7], 
-            "regressor__subsample": [0.8, 1.0],
+            "regressor__subsample": [0.5],
         }
     elif model_name == "lightgbm":
         regressor = LGBMRegressor(random_state=42, verbose=-1, subsample_freq=1)
         param_grid = {
-            "regressor__n_estimators": [300, 400],
+            "regressor__n_estimators": [100, 200],
             "regressor__learning_rate": [0.05, 0.1],
             "regressor__num_leaves": [31, 63],
-            "regressor__subsample": [0.8, 1.0],
+            "regressor__subsample": [0.5],
         }
     elif model_name == "mlp":
         regressor = MLPRegressor(max_iter=50, random_state=42, verbose=False)
         param_grid = {
-            "regressor__hidden_layer_sizes": [(5,), (10,)],
+            "regressor__hidden_layer_sizes": [(5,),(10,)],
             "regressor__learning_rate_init": [0.001, 0.01],
             "regressor__alpha": [0.0001, 0.01],
         }
@@ -68,7 +68,7 @@ def build_model(model_name: str) -> Tuple[Pipeline, Dict[str, Any]]:
     )
     return pipeline, param_grid
 
-def train(model_name: str, cv: int = 3) -> dict:
+def train(model_name: str, cv: int = 1) -> dict:
     logger.info("Chargement des donnees...")
     df = load_data()
     
@@ -160,7 +160,7 @@ def main() -> None:
     parser.add_argument(
         "--cv",
         type=int,
-        default=3,
+        default=1,
         help="Nombre de folds pour la validation croisee (defaut: 3)"
     )
     args = parser.parse_args()
