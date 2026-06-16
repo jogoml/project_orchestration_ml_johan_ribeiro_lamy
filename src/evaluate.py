@@ -69,7 +69,7 @@ def evaluate_model(model_uri: str | None = None, validate: bool = True):
 
     with start_run(run_name="evaluate"):
         # tracabilite -> logger le jeu d'evaluation comme dataset MLflow
-        dataset = mlflow.data.from_pandas(eval_df, source=str(DATA_PATH), targets=TARGET, name="eval")
+        dataset = mlflow.data.from_pandas(eval_df, source=str(DATA_PATH), targets=TARGET, name="eval")  # type: ignore
         mlflow.log_input(dataset, context="evaluation")
         
         # evaluer le modele avec le type "regressor"

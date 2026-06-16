@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 
 import os
+from typing import Any
 
 import mlflow
 import mlflow.data
@@ -29,7 +30,7 @@ def setup_experiment() -> None:
 
 def log_dataset(df: pd.DataFrame, context: str, name: str = "dataset") -> None:
     """Logger un dataset MLflow dans le run courant (tracabilite donnees -> modele)."""
-    dataset = mlflow.data.from_pandas(df, source=str(DATA_PATH), targets=TARGET, name=name)
+    dataset = mlflow.data.from_pandas(df, source=str(DATA_PATH), targets=TARGET, name=name)  # type: ignore
     mlflow.log_input(dataset, context=context)
 
 
@@ -43,7 +44,7 @@ def log_params(params: dict) -> None:
     mlflow.log_params(params)
 
 
-def log_param(key: str, value: any) -> None:
+def log_param(key: str, value: Any) -> None:
     """Logger un seul parametre."""
     mlflow.log_param(key, value)
 

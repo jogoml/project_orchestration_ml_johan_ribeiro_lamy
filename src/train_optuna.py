@@ -65,7 +65,7 @@ def suggest_params(trial: optuna.Trial, model_name: str) -> dict:
             "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         }
     elif model_name == "mlp":
-        hidden_layer_size = trial.suggest_categorical("hidden_layer_sizes", [(5,), (10,), (20,)])
+        hidden_layer_size = trial.suggest_categorical("hidden_layer_sizes", [(5,), (10,), (20,)])  # type: ignore
         return {
             "hidden_layer_sizes": hidden_layer_size,
             "learning_rate_init": trial.suggest_float("learning_rate_init", 0.001, 0.1, log=True),
