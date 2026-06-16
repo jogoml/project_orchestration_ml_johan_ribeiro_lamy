@@ -68,7 +68,7 @@ def build_model(model_name: str) -> Tuple[Pipeline, Dict[str, Any]]:
     )
     return pipeline, param_grid
 
-def train(model_name: str, cv: int = 1) -> dict:
+def train(model_name: str, cv: int = 2) -> dict:
     logger.info("Chargement des donnees...")
     df = load_data()
     
@@ -160,7 +160,7 @@ def main() -> None:
     parser.add_argument(
         "--cv",
         type=int,
-        default=1,
+        default=2,
         help="Nombre de folds pour la validation croisee (defaut: 3)"
     )
     args = parser.parse_args()
