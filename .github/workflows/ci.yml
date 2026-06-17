@@ -37,6 +37,11 @@ jobs:
           uvx kaggle datasets download -d sharmajicoder/used-car-price-prediction-dataset
           unzip used-car-price-prediction-dataset.zip -d data/
 
+      - name: Start MLflow server
+        run: |
+          nohup make mlflow > mlflow.log 2>&1 &
+          sleep 5
+
       - name: Run tests (pytest)
         run: make test
 
