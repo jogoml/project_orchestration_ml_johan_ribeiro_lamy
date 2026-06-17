@@ -1,0 +1,28 @@
+FROM python:3.13-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies (system-wide using uv)
+RUN uv sync --frozen
+
+# Copy the rest of the application
+COPY . .
+
+# Set the environment variable for uv to use the virtual environment
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Run Streamlit
+CMD ["streamlit", "run", "frontend/app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
