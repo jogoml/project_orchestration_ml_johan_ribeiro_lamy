@@ -14,7 +14,26 @@ st.title("🚗 Estimateur de Prix de Voitures d'Occasion")
 
 api_url = st.sidebar.text_input("URL de l'API", value=API_URL)
 
-predict_tab, history_tab = st.tabs(["Prédiction", "Historique"])
+home_tab, predict_tab, history_tab = st.tabs(["Accueil", "Prédiction", "Historique"])
+
+with home_tab:
+    st.header("Bienvenue sur l'Estimateur de Prix ! 👋")
+    st.markdown("""
+    Cette application a pour but d'**estimer le prix de revente d'une voiture d'occasion** sur le marché indien, en se basant sur ses caractéristiques techniques et son historique.
+    
+    ### 🎯 Objectif
+    Grâce à un modèle de Machine Learning entraîné sur des milliers d'annonces réelles, cette application permet :
+    - Aux **vendeurs** de fixer un prix juste et compétitif.
+    - Aux **acheteurs** de vérifier s'ils font une bonne affaire.
+    - Aux **concessionnaires** d'avoir une première base d'estimation rapide.
+    
+    ### 🚀 Comment ça marche ?
+    1. Rendez-vous dans l'onglet **Prédiction**.
+    2. Remplissez le formulaire avec les caractéristiques du véhicule (marque, kilométrage, puissance, etc.).
+    3. Cliquez sur "Estimer le prix". L'application interrogera notre API intelligente pour calculer la valeur du véhicule en temps réel !
+    
+    *Ce projet est une démonstration d'orchestration MLOps.*
+    """)
 
 with predict_tab:
     st.subheader("Entrez les caractéristiques de la voiture")
