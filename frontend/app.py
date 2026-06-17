@@ -84,8 +84,14 @@ with predict_tab:
                 result = response.json()
                 
                 st.success("Prédiction réussie !")
-                st.metric(label="Prix Estimé", value=f"{result['price']:,.2f} ₹")
+                price_inr = result['price']
+                price_eur = price_inr * 0.0112 # Conversion approximative (1 INR ≈ 0.0112 EUR)
                 
+                col_inr, col_eur = st.columns(2)
+                with col_inr:
+                    st.metric(label="Prix Estimé (INR)", value=f"{price_inr:,.2f} ₹")
+                with col_eur:
+                    st.metric(label="Prix Estimé (EUR)", value=f"{price_eur:,.2f} €")
             except httpx.HTTPError as exc:
                 st.error(f"Appel à l'API impossible : {exc}")
             except KeyError:
