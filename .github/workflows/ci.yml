@@ -28,6 +28,15 @@ jobs:
       - name: Run type checker (mypy)
         run: make type
 
+      - name: Download dataset from Kaggle
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          mkdir -p data
+          uvx kaggle datasets download -d sharmajicoder/used-car-price-prediction-dataset
+          unzip used-car-price-prediction-dataset.zip -d data/
+
       - name: Run tests (pytest)
         run: make test
 
