@@ -30,3 +30,6 @@ jobs:
 
       - name: Run tests (pytest)
         run: make test
+
+      - name: Train model with Optuna
+        run: make train-optuna
