@@ -505,7 +505,7 @@ with tab_surprise:
           width: 24, height: 12,
           angle: 0, speed: 0,
           maxSpeed: 4.5, acceleration: 0.15,
-          friction: 0.05, grassFriction: 0.15,
+          friction: 0.05, grassFriction: 0.1,
           rotationSpeed: 0.07
         };
 
