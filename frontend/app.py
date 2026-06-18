@@ -8,8 +8,8 @@ import pandas as pd
 import streamlit as st
 
 API_INTERNAL_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
-AIRFLOW_INTERNAL_URL = os.environ.get("AIRFLOW_URL", "http://localhost:8080")
-MLFLOW_INTERNAL_URL = os.environ.get("MLFLOW_URL", "http://localhost:5000")
+AIRFLOW_INTERNAL_URL = os.environ.get("AIRFLOW_URL", "http://airflow:8080")
+MLFLOW_INTERNAL_URL = os.environ.get("MLFLOW_URL", "http://mlflow:5000")
 
 EXTERNAL_IP = "88.96.57.190"
 AIRFLOW_EXTERNAL_URL = f"http://{EXTERNAL_IP}:8080"
