@@ -610,4 +610,4 @@ with tab_surprise:
     </div>
     """
     
-    components.html(game_html, height=450, scrolling=False)
+    components.html(game_html, height=500, scrolling=False)
