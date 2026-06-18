@@ -65,7 +65,7 @@ def task_check_quality(**context) -> None:
 with DAG(
     dag_id="model_retraining",
     description="Verifie les donnees, reentraine le modele avec Optuna et controle sa qualite",
-    schedule="10 * * * *",
+    schedule="0 10 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
     default_args=default_args,

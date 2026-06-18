@@ -72,7 +72,7 @@ with DAG(
     description="Envoie 20 previsions par jour a l'API (trafic simule)",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
-    schedule="10 * * * *",
+    schedule="0 3 * * * 1",# Tous les lundis à 3h du matin
     catchup=False,
     tags=["regression", "predictions"],
 ) as dag:
