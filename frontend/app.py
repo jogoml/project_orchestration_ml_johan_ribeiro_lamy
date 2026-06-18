@@ -464,7 +464,7 @@ with tab_history:
 
 with tab_surprise:
     st.markdown("### 🏎️ En attendant la fin d'un train...")
-    st.markdown("Fais un petit tour de piste ! Utilise les **flèches directionnelles** de ton clavier pour piloter. Attention, rouler dans l'herbe te ralentit fortement !")
+    st.markdown("Fais un petit tour de piste ! Utilise les **flèches directionnelles** de ton clavier pour piloter.")
     
     game_html = """
     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0b0f19; padding: 20px; border-radius: 16px;">
@@ -516,9 +516,9 @@ with tab_surprise:
           x: 280, y: 80,
           width: 24, height: 12,
           angle: 0, speed: 0,
-          maxSpeed: 7, acceleration: 0.25,
+          maxSpeed: 4.5, acceleration: 0.15,
           friction: 0.05, grassFriction: 0.15,
-          rotationSpeed: 0.08
+          rotationSpeed: 0.07
         };
 
         const track = {
