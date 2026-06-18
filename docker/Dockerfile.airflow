@@ -1,5 +1,9 @@
 FROM apache/airflow:2.9.2-python3.11
 
+# Installation des librairies systeme necessaires (libgomp pour LightGBM)
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+
 USER airflow
 
 # Installation des dependances du projet necessaires pour executer les DAGs
