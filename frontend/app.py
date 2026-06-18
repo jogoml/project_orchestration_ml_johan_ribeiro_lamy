@@ -6,6 +6,7 @@ import datetime
 import httpx
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 import mlflow
 from mlflow.tracking import MlflowClient
 
@@ -229,7 +230,13 @@ with col_btns:
 st.markdown("---")
 
 # --- ONGLETS ---
-tab_home, tab_eval, tab_predict, tab_history = st.tabs(["🏠 Accueil & État", "📊 Évaluation Modèle", "🔮 Prédiction", "📋 Historique"])
+tab_home, tab_eval, tab_predict, tab_history, tab_surprise = st.tabs([
+    "🏠 Accueil & État", 
+    "📊 Évaluation Modèle", 
+    "🔮 Prédiction", 
+    "📋 Historique", 
+    "🎁 Surprise"
+])
 
 with tab_home:
     st.markdown("""
@@ -454,3 +461,148 @@ with tab_history:
         df_history = pd.DataFrame(st.session_state.prediction_history)
         df_history.columns = ["Date / Heure", "Véhicule", "Prix (INR)", "Prix (EUR)", "Détails"]
         st.dataframe(df_history, use_container_width=True, hide_index=True)
+
+with tab_surprise:
+    st.markdown("### 🏎️ En attendant la fin d'un train...")
+    st.markdown("Fais un petit tour de piste ! Utilise les **flèches directionnelles** de ton clavier pour piloter. Attention, rouler dans l'herbe te ralentit fortement !")
+    
+    game_html = """
+    <div style="display: flex; justify-content: center; align-items: center; background: #0b0f19; padding: 20px; border-radius: 16px;">
+      <canvas id="gameCanvas" width="800" height="400" style="border: 2px solid #8b5cf6; border-radius: 8px; box-shadow: 0 0 20px rgba(139,92,246,0.3); outline: none;" tabindex="0"></canvas>
+      <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        // Permet au canvas de capter les fleches sans scroller la page
+        canvas.focus();
+        canvas.addEventListener('click', () => canvas.focus());
+
+        const keys = {};
+        window.addEventListener("keydown", e => {
+          if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) {
+              e.preventDefault(); // Bloque le scroll
+          }
+          keys[e.key] = true;
+        }, { passive: false });
+        window.addEventListener("keyup", e => keys[e.key] = false);
+
+        const car = {
+          x: 250, y: 80,
+          width: 24, height: 12,
+          angle: 0, speed: 0,
+          maxSpeed: 7, acceleration: 0.15,
+          friction: 0.04, grassFriction: 0.3,
+          rotationSpeed: 0.06
+        };
+
+        const track = {
+          cx1: 250, cy1: 200, r1: 120,
+          cx2: 550, cy2: 200, r2: 120,
+          thickness: 60
+        };
+
+        function onTrack(x, y) {
+          const d1 = Math.hypot(x - track.cx1, y - track.cy1);
+          const d2 = Math.hypot(x - track.cx2, y - track.cy2);
+          
+          const onCircle1 = Math.abs(d1 - track.r1) < track.thickness / 2;
+          const onCircle2 = Math.abs(d2 - track.r2) < track.thickness / 2;
+          
+          return onCircle1 || onCircle2;
+        }
+
+        function drawTrack() {
+          // Herbe
+          ctx.fillStyle = "#166534";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          ctx.lineWidth = track.thickness;
+          ctx.lineCap = "round";
+          
+          // Asphalte
+          ctx.strokeStyle = "#334155";
+          
+          ctx.beginPath();
+          ctx.arc(track.cx1, track.cy1, track.r1, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          ctx.beginPath();
+          ctx.arc(track.cx2, track.cy2, track.r2, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          // Ligne de depart
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(track.cx1, track.cy1 - track.r1 - track.thickness/2);
+          ctx.lineTo(track.cx1, track.cy1 - track.r1 + track.thickness/2);
+          ctx.stroke();
+        }
+
+        function drawCar() {
+          ctx.save();
+          ctx.translate(car.x, car.y);
+          ctx.rotate(car.angle);
+          
+          // Chassis
+          ctx.fillStyle = "#ef4444";
+          ctx.fillRect(-car.width/2, -car.height/2, car.width, car.height);
+          
+          // Pare-brise
+          ctx.fillStyle = "#000";
+          ctx.fillRect(-car.width/4, -car.height/2 + 2, car.width/4, car.height - 4);
+          
+          // Phares
+          ctx.fillStyle = "#fbbf24";
+          ctx.fillRect(car.width/2 - 2, -car.height/2 + 1, 2, 3);
+          ctx.fillRect(car.width/2 - 2, car.height/2 - 4, 2, 3);
+
+          ctx.restore();
+        }
+
+        function update() {
+          let currentFriction = onTrack(car.x, car.y) ? car.friction : car.grassFriction;
+
+          if (keys["ArrowUp"]) car.speed += car.acceleration;
+          if (keys["ArrowDown"]) car.speed -= car.acceleration;
+          
+          if (Math.abs(car.speed) > 0.1) {
+            const dir = car.speed > 0 ? 1 : -1;
+            if (keys["ArrowLeft"]) car.angle -= car.rotationSpeed * dir;
+            if (keys["ArrowRight"]) car.angle += car.rotationSpeed * dir;
+          }
+
+          if (car.speed > 0) {
+            car.speed -= currentFriction;
+            if (car.speed < 0) car.speed = 0;
+          } else if (car.speed < 0) {
+            car.speed += currentFriction;
+            if (car.speed > 0) car.speed = 0;
+          }
+
+          if (car.speed > car.maxSpeed) car.speed = car.maxSpeed;
+          if (car.speed < -car.maxSpeed/2) car.speed = -car.maxSpeed/2;
+
+          car.x += Math.cos(car.angle) * car.speed;
+          car.y += Math.sin(car.angle) * car.speed;
+          
+          if (car.x < 0) car.x = 0;
+          if (car.x > canvas.width) car.x = canvas.width;
+          if (car.y < 0) car.y = 0;
+          if (car.y > canvas.height) car.y = canvas.height;
+        }
+
+        function loop() {
+          update();
+          drawTrack();
+          drawCar();
+          requestAnimationFrame(loop);
+        }
+
+        // Init
+        loop();
+      </script>
+    </div>
+    """
+    
+    components.html(game_html, height=450, scrolling=False)
