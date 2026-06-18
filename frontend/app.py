@@ -7,9 +7,14 @@ import httpx
 import pandas as pd
 import streamlit as st
 
-API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
-AIRFLOW_URL = os.environ.get("AIRFLOW_URL", "http://localhost:8080")
-MLFLOW_URL = os.environ.get("MLFLOW_URL", "http://localhost:5000")
+API_INTERNAL_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
+AIRFLOW_INTERNAL_URL = os.environ.get("AIRFLOW_URL", "http://localhost:8080")
+MLFLOW_INTERNAL_URL = os.environ.get("MLFLOW_URL", "http://localhost:5000")
+
+EXTERNAL_IP = "88.96.57.190"
+AIRFLOW_EXTERNAL_URL = f"http://{EXTERNAL_IP}:8080"
+MLFLOW_EXTERNAL_URL = f"http://{EXTERNAL_IP}:5000"
+API_EXTERNAL_URL = f"http://{EXTERNAL_IP}:8000/docs"
 
 st.set_page_config(page_title="AutoPrice Pro", layout="wide", initial_sidebar_state="collapsed")
 
@@ -17,16 +22,16 @@ st.set_page_config(page_title="AutoPrice Pro", layout="wide", initial_sidebar_st
 if "prediction_history" not in st.session_state:
     st.session_state.prediction_history = []
 
-def check_service(url: str, name: str) -> dict:
+def check_service(internal_url: str, external_url: str, name: str) -> dict:
     try:
         # Pour mlflow et airflow on teste juste la racine ou /health
         # On met un timeout très court pour ne pas bloquer
-        endpoint = f"{url}/health" if name == "API" else url
+        endpoint = f"{internal_url}/health" if name == "API" else internal_url
         response = httpx.get(endpoint, timeout=2.0)
         is_up = response.status_code < 500
-        return {"name": name, "status": "🟢 En ligne" if is_up else "🔴 Erreur", "url": url}
+        return {"name": name, "status": "🟢 En ligne" if is_up else "🔴 Erreur", "url": external_url}
     except Exception:
-        return {"name": name, "status": "🔴 Hors ligne", "url": url}
+        return {"name": name, "status": "🔴 Hors ligne", "url": external_url}
 
 # --- CSS CUSTOM PREMIUM AUTO ---
 st.markdown("""
@@ -184,8 +189,8 @@ with col_title:
 with col_btns:
     st.markdown(f"""
         <div style="text-align: right; margin-top: 15px;">
-            <a href="{AIRFLOW_URL}" target="_blank" class="custom-btn airflow">🌪️ Airflow</a>
-            <a href="{MLFLOW_URL}" target="_blank" class="custom-btn mlflow">📊 MLflow</a>
+            <a href="{AIRFLOW_EXTERNAL_URL}" target="_blank" class="custom-btn airflow">🌪️ Airflow</a>
+            <a href="{MLFLOW_EXTERNAL_URL}" target="_blank" class="custom-btn mlflow">📊 MLflow</a>
         </div>
     """, unsafe_allow_html=True)
 
@@ -216,34 +221,37 @@ with tab_home:
         pass
 
     with st.spinner("Vérification des services..."):
-        status_api = check_service(API_URL, "API")
-        status_mlflow = check_service(MLFLOW_URL, "MLflow")
-        status_airflow = check_service(AIRFLOW_URL, "Airflow")
+        status_api = check_service(API_INTERNAL_URL, API_EXTERNAL_URL, "API")
+        status_mlflow = check_service(MLFLOW_INTERNAL_URL, MLFLOW_EXTERNAL_URL, "MLflow")
+        status_airflow = check_service(AIRFLOW_INTERNAL_URL, AIRFLOW_EXTERNAL_URL, "Airflow")
 
     with col_api:
         st.markdown(f"""
         <div class="glass-card" style="text-align: center;">
-            <h4>🚀 {status_api['name']}</h4>
+            <a href="{status_api['url']}" target="_blank" style="text-decoration: none; color: inherit;">
+                <h4>🚀 {status_api['name']}</h4>
+            </a>
             <p style="font-size: 1.5rem; margin: 10px 0;">{status_api['status']}</p>
-            <small style="color: #64748b;">{status_api['url']}</small>
         </div>
         """, unsafe_allow_html=True)
         
     with col_ml:
         st.markdown(f"""
         <div class="glass-card" style="text-align: center;">
-            <h4>📊 {status_mlflow['name']}</h4>
+            <a href="{status_mlflow['url']}" target="_blank" style="text-decoration: none; color: inherit;">
+                <h4>📊 {status_mlflow['name']}</h4>
+            </a>
             <p style="font-size: 1.5rem; margin: 10px 0;">{status_mlflow['status']}</p>
-            <small style="color: #64748b;">{status_mlflow['url']}</small>
         </div>
         """, unsafe_allow_html=True)
         
     with col_air:
         st.markdown(f"""
         <div class="glass-card" style="text-align: center;">
-            <h4>🌪️ {status_airflow['name']}</h4>
+            <a href="{status_airflow['url']}" target="_blank" style="text-decoration: none; color: inherit;">
+                <h4>🌪️ {status_airflow['name']}</h4>
+            </a>
             <p style="font-size: 1.5rem; margin: 10px 0;">{status_airflow['status']}</p>
-            <small style="color: #64748b;">{status_airflow['url']}</small>
         </div>
         """, unsafe_allow_html=True)
 
@@ -312,7 +320,7 @@ with tab_predict:
         
         with st.spinner("Analyse des données par le modèle..."):
             try:
-                response = httpx.post(f"{API_URL}/predict", json=payload, timeout=10.0)
+                response = httpx.post(f"{API_INTERNAL_URL}/predict", json=payload, timeout=10.0)
                 response.raise_for_status()
                 result = response.json()
                 
