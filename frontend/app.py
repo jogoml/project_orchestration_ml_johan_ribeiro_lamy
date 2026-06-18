@@ -6,6 +6,8 @@ import datetime
 import httpx
 import pandas as pd
 import streamlit as st
+import mlflow
+from mlflow.tracking import MlflowClient
 
 API_INTERNAL_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 AIRFLOW_INTERNAL_URL = os.environ.get("AIRFLOW_URL", "http://airflow:8080")
@@ -32,6 +34,36 @@ def check_service(internal_url: str, external_url: str, name: str) -> dict:
         return {"name": name, "status": "🟢 En ligne" if is_up else "🔴 Erreur", "url": external_url}
     except Exception:
         return {"name": name, "status": "🔴 Hors ligne", "url": external_url}
+
+@st.cache_data(ttl=60)
+def get_model_metrics():
+    try:
+        mlflow.set_tracking_uri(MLFLOW_INTERNAL_URL)
+        client = MlflowClient()
+        versions = client.search_model_versions("name='price_predictor'")
+        if not versions:
+            return None, "Aucune version du modèle 'price_predictor' n'a été trouvée."
+        
+        latest = max(versions, key=lambda v: int(v.version))
+        run_id = latest.run_id
+        run = client.get_run(run_id)
+        
+        # Download scatter plot if available
+        import os
+        scatter_path = None
+        try:
+            scatter_path = client.download_artifacts(run_id, "scatter.png")
+        except Exception:
+            pass
+            
+        return {
+            "version": latest.version,
+            "metrics": run.data.metrics,
+            "run_id": run_id,
+            "scatter_path": scatter_path
+        }, None
+    except Exception as e:
+        return None, str(e)
 
 # --- CSS CUSTOM PREMIUM AUTO ---
 st.markdown("""
@@ -197,7 +229,7 @@ with col_btns:
 st.markdown("---")
 
 # --- ONGLETS ---
-tab_home, tab_predict, tab_history = st.tabs(["🏠 Accueil & État", "🔮 Prédiction", "📋 Historique"])
+tab_home, tab_eval, tab_predict, tab_history = st.tabs(["🏠 Accueil & État", "📊 Évaluation Modèle", "🔮 Prédiction", "📋 Historique"])
 
 with tab_home:
     st.markdown("""
@@ -255,6 +287,60 @@ with tab_home:
         </div>
         """, unsafe_allow_html=True)
 
+with tab_eval:
+    st.markdown("### 📊 Évaluation du Modèle Actif")
+    st.markdown("Cette section affiche les performances du modèle actuellement déployé en production.")
+    
+    with st.spinner("Récupération des métriques depuis MLflow..."):
+        data, error = get_model_metrics()
+        
+    if error:
+        st.error(f"Impossible de récupérer les métriques : {error}")
+    elif data:
+        st.markdown(f"**Modèle :** `price_predictor` (Version {data['version']})")
+        metrics = data['metrics']
+        
+        # Les metriques varient selon si l'entrainement etait simple ou hyperopt,
+        # ou si c'est l'evaluation par defaut.
+        r2 = metrics.get('r2', metrics.get('r2_score', 0))
+        rmse = metrics.get('rmse', metrics.get('root_mean_squared_error', 0))
+        mae = metrics.get('mae', metrics.get('mean_absolute_error', 0))
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="glass-card" style="text-align: center; border-bottom: 3px solid #00E5FF; padding: 15px;">
+                <h4 style="color: #94a3b8; font-weight: normal; margin-bottom: 5px;">Score R²</h4>
+                <p class="metric-value" style="font-size: 2.2rem; margin: 0;">{r2:.4f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col2:
+            st.markdown(f"""
+            <div class="glass-card" style="text-align: center; border-bottom: 3px solid #8b5cf6; padding: 15px;">
+                <h4 style="color: #94a3b8; font-weight: normal; margin-bottom: 5px;">RMSE</h4>
+                <p class="metric-value" style="font-size: 2.2rem; margin: 0;">{rmse:,.0f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col3:
+            st.markdown(f"""
+            <div class="glass-card" style="text-align: center; border-bottom: 3px solid #f43f5e; padding: 15px;">
+                <h4 style="color: #94a3b8; font-weight: normal; margin-bottom: 5px;">MAE</h4>
+                <p class="metric-value" style="font-size: 2.2rem; margin: 0;">{mae:,.0f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        import os
+        if data.get('scatter_path') and os.path.exists(data['scatter_path']):
+            st.markdown("### 📈 Prédictions vs Valeurs Réelles")
+            st.markdown("Ce graphique montre la corrélation entre les prix réels (axe X) et les prix prédits par le modèle (axe Y). Plus les points sont proches de la ligne rouge, meilleure est la prédiction.")
+            
+            # On met une marge pour eviter que l'image prenne tout l'ecran
+            col_img1, col_img2, col_img3 = st.columns([1, 4, 1])
+            with col_img2:
+                st.image(data['scatter_path'], use_container_width=True)
 
 with tab_predict:
     st.markdown("### ⚙️ Caractéristiques du véhicule")
