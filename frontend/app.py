@@ -15,6 +15,7 @@ st.title("🚗 Estimateur de Prix de Voitures d'Occasion")
 home_tab, predict_tab = st.tabs(["Accueil", "Prédiction"])
 
 with home_tab:
+    st.markdown("### Par Johan Ribeiro Lamy")
     st.header("Bienvenue sur l'Estimateur de Prix ! 👋")
     st.markdown("""
     Cette application a pour but d'**estimer le prix de revente d'une voiture d'occasion** sur le marché indien, en se basant sur ses caractéristiques techniques et son historique.
