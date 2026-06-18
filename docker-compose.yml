@@ -73,6 +73,7 @@ services:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       - API_URL=http://api:8000
       - AIRFLOW_HOME=/opt/airflow
+      - PYTHONPATH=/opt/airflow
       # Utilisateur admin par defaut
       - _AIRFLOW_WWW_USER_USERNAME=admin
       - _AIRFLOW_WWW_USER_PASSWORD=admin
