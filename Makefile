@@ -35,7 +35,7 @@ RESET  := $(shell printf '\033[0m')
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
         data train train-models train-optuna mlflow api frontend \
-        docker-build docker-run docker-up docker-down \
+        docker-build docker-run docker-up docker-down free-ports workflow-docker \
         lint format type test check
 
 
@@ -138,6 +138,20 @@ docker-up: ## Demarre la stack (mlflow, api, frontend)
 
 docker-down: ## Arrete et supprime les conteneurs (conserve les volumes)
 	docker compose -f docker-compose.yml down
+
+free-ports: ## Libere les ports locaux occupes
+	@echo "$(YELLOW)>> Liberation des ports locaux...$(RESET)"
+	-fuser -k $(MLFLOW_PORT)/tcp $(API_PORT)/tcp $(FRONTEND_PORT)/tcp 2>/dev/null || true
+
+workflow-docker: free-ports ## Workflow complet avec Docker
+	@echo "$(YELLOW)>> Liberation des ports locaux...$(RESET)"
+	-fuser -k $(MLFLOW_PORT)/tcp $(API_PORT)/tcp $(FRONTEND_PORT)/tcp 2>/dev/null || true
+	@echo "$(YELLOW)>> Demarrage de MLflow...$(RESET)"
+	docker compose up -d mlflow
+	@echo "$(YELLOW)>> Entrainement du modele en conteneur...$(RESET)"
+	$(MAKE) docker-run
+	@echo "$(YELLOW)>> Demarrage de l'ensemble des services...$(RESET)"
+	$(MAKE) docker-up
 
 
 # ==============================================================================

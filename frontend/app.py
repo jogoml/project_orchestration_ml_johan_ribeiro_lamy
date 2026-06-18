@@ -12,9 +12,7 @@ API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 st.set_page_config(page_title="Prédiction Prix Voiture", layout="wide")
 st.title("🚗 Estimateur de Prix de Voitures d'Occasion")
 
-api_url = st.sidebar.text_input("URL de l'API", value=API_URL)
-
-home_tab, predict_tab, history_tab = st.tabs(["Accueil", "Prédiction", "Historique"])
+home_tab, predict_tab = st.tabs(["Accueil", "Prédiction"])
 
 with home_tab:
     st.header("Bienvenue sur l'Estimateur de Prix ! 👋")
@@ -98,7 +96,7 @@ with predict_tab:
         
         with st.spinner("Demande à l'API en cours..."):
             try:
-                response = httpx.post(f"{api_url}/predict", json=payload, timeout=10.0)
+                response = httpx.post(f"{API_URL}/predict", json=payload, timeout=10.0)
                 response.raise_for_status()
                 result = response.json()
                 
@@ -115,8 +113,3 @@ with predict_tab:
                 st.error(f"Appel à l'API impossible : {exc}")
             except KeyError:
                 st.error(f"Réponse inattendue de l'API : {result}")
-
-with history_tab:
-    st.subheader("Historique des prévisions")
-    st.info("Aucun journal de prévisions : ajoutez un endpoint /predictions à l'API (bonus).")
-    _ = pd
