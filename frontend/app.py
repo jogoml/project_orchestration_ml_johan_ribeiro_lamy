@@ -468,14 +468,8 @@ with tab_surprise:
     
     game_html = """
     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0b0f19; padding: 20px; border-radius: 16px;">
-      <p style="color: #94a3b8; margin-bottom: 10px;"><i>Clique sur le circuit pour activer les contrôles clavier, ou utilise les boutons ci-dessous.</i></p>
+      <p style="color: #94a3b8; margin-bottom: 10px;"><i>Clique sur le circuit pour activer les contrôles clavier.</i></p>
       <canvas id="gameCanvas" width="800" height="400" style="border: 2px solid #8b5cf6; border-radius: 8px; box-shadow: 0 0 20px rgba(139,92,246,0.3); outline: none;" tabindex="0"></canvas>
-      <div style="margin-top: 15px; user-select: none;">
-         <button id="btnLeft" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer;">⬅️</button>
-         <button id="btnUp" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">⬆️ Gaz</button>
-         <button id="btnDown" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer;">⬇️ Frein</button>
-         <button id="btnRight" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer;">➡️</button>
-      </div>
       <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -496,21 +490,6 @@ with tab_surprise:
           for(let k in keys) keys[k] = false;
         });
 
-        // Boutons virtuels
-        const bindBtn = (id, code) => {
-           const btn = document.getElementById(id);
-           const press = (e) => { e.preventDefault(); keys[code] = true; canvas.focus(); };
-           const release = (e) => { e.preventDefault(); keys[code] = false; };
-           btn.addEventListener('mousedown', press);
-           btn.addEventListener('mouseup', release);
-           btn.addEventListener('mouseleave', release);
-           btn.addEventListener('touchstart', press);
-           btn.addEventListener('touchend', release);
-        };
-        bindBtn('btnUp', 'ArrowUp');
-        bindBtn('btnDown', 'ArrowDown');
-        bindBtn('btnLeft', 'ArrowLeft');
-        bindBtn('btnRight', 'ArrowRight');
 
         const car = {
           x: 280, y: 80,
@@ -631,4 +610,4 @@ with tab_surprise:
     </div>
     """
     
-    components.html(game_html, height=600, scrolling=False)
+    components.html(game_html, height=450, scrolling=False)
