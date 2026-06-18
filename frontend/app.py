@@ -476,12 +476,21 @@ with tab_surprise:
         
         // Permet au canvas de capter les fleches sans scroller la page
         canvas.focus();
-        canvas.addEventListener('click', () => canvas.focus());
+        // Peu importe où le joueur clique dans la zone du jeu, on redonne le focus au canvas
+        document.addEventListener('click', () => canvas.focus());
+        window.addEventListener('click', () => canvas.focus());
+        
+        // S'assurer que le parent (l'iframe) signale aussi qu'il est actif
+        document.body.addEventListener('click', () => {
+            window.focus();
+            canvas.focus();
+        });
 
         const keys = {};
         window.addEventListener("keydown", e => {
           if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) {
               e.preventDefault(); // Bloque le scroll
+              e.stopPropagation();
           }
           keys[e.code] = true;
         }, { passive: false });
