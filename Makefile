@@ -108,7 +108,7 @@ data: ## Prepare/genere le jeu de donnees dans data/
 		exit 1; \
 	fi
 	@set -a; . ./.env; set +a; \
-	uvx kaggle datasets download -d sharmajicoder/used-car-price-prediction-dataset
+	uv tool run kaggle datasets download -d sharmajicoder/used-car-price-prediction-dataset
 	unzip -q -o used-car-price-prediction-dataset.zip -d data/
 	rm used-car-price-prediction-dataset.zip
 
