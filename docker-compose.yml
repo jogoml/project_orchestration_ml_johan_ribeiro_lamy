@@ -59,3 +59,33 @@ services:
       - mlflow
     profiles:
       - tools
+
+  airflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.airflow
+    container_name: airflow_server
+    command: standalone
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - API_URL=http://api:8000
+      - AIRFLOW_HOME=/opt/airflow
+      # Configuration locale pour la persistance
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data
+      - ./models:/opt/airflow/models
+      - ./mlartifacts:/opt/airflow/mlartifacts
+      - ./mlflow.db:/opt/airflow/mlflow.db
+      # On persiste la BDD interne d'Airflow
+      - ./airflow.db:/opt/airflow/airflow.db
+      - ./airflow_logs:/opt/airflow/logs
+    depends_on:
+      - mlflow
+      - api
+    restart: unless-stopped

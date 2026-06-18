@@ -142,8 +142,8 @@ docker-build: ## Construit l'image d'entrainement
 docker-run: ## Lance l'entrainement en conteneur
 	docker compose run --rm train uv run python -m src.train_optuna --model $(MODEL) --n-trials $(N_TRIALS) --cv $(CV)
 
-docker-up: ## Demarre la stack (mlflow, api, frontend)
-	docker compose -f docker-compose.yml up -d --build mlflow api frontend
+docker-up: ## Demarre la stack (mlflow, api, frontend, airflow)
+	docker compose -f docker-compose.yml up -d --build mlflow api frontend airflow
 
 docker-down: ## Arrete et supprime les conteneurs (conserve les volumes)
 	docker compose -f docker-compose.yml down
@@ -153,8 +153,6 @@ free-ports: ## Libere les ports locaux occupes
 	-fuser -k $(MLFLOW_PORT)/tcp $(API_PORT)/tcp $(FRONTEND_PORT)/tcp 2>/dev/null || true
 
 workflow-docker: free-ports ## Workflow complet avec Docker
-	@echo "$(YELLOW)>> Liberation des ports locaux...$(RESET)"
-	-fuser -k $(MLFLOW_PORT)/tcp $(API_PORT)/tcp $(FRONTEND_PORT)/tcp 2>/dev/null || true
 	@echo "$(YELLOW)>> Demarrage de MLflow...$(RESET)"
 	docker compose up -d mlflow
 	@echo "$(YELLOW)>> Entrainement du modele en conteneur...$(RESET)"
