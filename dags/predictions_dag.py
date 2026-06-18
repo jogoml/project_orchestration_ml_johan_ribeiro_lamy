@@ -43,8 +43,9 @@ def task_send_predictions(**context) -> None:
     else:
         features = df
 
-    # Echantillonner N_PREDICTIONS lignes
-    sample = features.sample(n=N_PREDICTIONS, random_state=42)
+    # Echantillonner N_PREDICTIONS lignes en s'assurant qu'il n'y a pas de valeurs nulles
+    # qui feraient planter la validation Pydantic de l'API (erreur 422)
+    sample = features.dropna().sample(n=N_PREDICTIONS)
 
     # Ouvrir un client httpx sur l'API_URL, verifier /health,
     # puis pour chaque ligne envoyer POST /predict avec le payload JSON.
