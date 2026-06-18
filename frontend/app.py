@@ -179,7 +179,7 @@ st.markdown("""
 col_title, col_btns = st.columns([2, 1])
 with col_title:
     st.markdown('<h1 class="main-title">🏎️ AutoPrice Pro</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Plateforme d\\'estimation intelligente par Johan Ribeiro Lamy</p>', unsafe_allow_html=True)
+    st.markdown("<p class='sub-title'>Plateforme d'estimation intelligente par Johan Ribeiro Lamy</p>", unsafe_allow_html=True)
 
 with col_btns:
     st.markdown(f"""
