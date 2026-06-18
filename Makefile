@@ -101,7 +101,16 @@ doctor: check-uv check-venv ## Diagnostique l'environnement de travail
 # ==============================================================================
 
 data: ## Prepare/genere le jeu de donnees dans data/
-	# TODO (S0) : appeler votre script de preparation de donnees
+	@echo "$(YELLOW)>> Telechargement du dataset depuis Kaggle...$(RESET)"
+	mkdir -p data
+	@if [ ! -f .env ]; then \
+		echo "$(RED)[ERREUR] Fichier .env manquant. Veuillez le creer a partir de .env.exemple$(RESET)"; \
+		exit 1; \
+	fi
+	@set -a; . ./.env; set +a; \
+	uvx kaggle datasets download -d sharmajicoder/used-car-price-prediction-dataset
+	unzip -q -o used-car-price-prediction-dataset.zip -d data/
+	rm used-car-price-prediction-dataset.zip
 
 train: ## Entraine la baseline -> models/model.joblib (C=.. MAX_ITER=..)
 	uv run python -m src.train
