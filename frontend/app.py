@@ -467,8 +467,15 @@ with tab_surprise:
     st.markdown("Fais un petit tour de piste ! Utilise les **flèches directionnelles** de ton clavier pour piloter. Attention, rouler dans l'herbe te ralentit fortement !")
     
     game_html = """
-    <div style="display: flex; justify-content: center; align-items: center; background: #0b0f19; padding: 20px; border-radius: 16px;">
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0b0f19; padding: 20px; border-radius: 16px;">
+      <p style="color: #94a3b8; margin-bottom: 10px;"><i>Clique sur le circuit pour activer les contrôles clavier, ou utilise les boutons ci-dessous.</i></p>
       <canvas id="gameCanvas" width="800" height="400" style="border: 2px solid #8b5cf6; border-radius: 8px; box-shadow: 0 0 20px rgba(139,92,246,0.3); outline: none;" tabindex="0"></canvas>
+      <div style="margin-top: 15px; user-select: none;">
+         <button id="btnLeft" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer;">⬅️</button>
+         <button id="btnUp" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">⬆️ Gaz</button>
+         <button id="btnDown" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer;">⬇️ Frein</button>
+         <button id="btnRight" style="padding: 15px 25px; font-size: 18px; margin: 5px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer;">➡️</button>
+      </div>
       <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -482,31 +489,50 @@ with tab_surprise:
           if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) {
               e.preventDefault(); // Bloque le scroll
           }
-          keys[e.key] = true;
+          keys[e.code] = true;
         }, { passive: false });
-        window.addEventListener("keyup", e => keys[e.key] = false);
+        window.addEventListener("keyup", e => keys[e.code] = false);
+        window.addEventListener("blur", () => {
+          for(let k in keys) keys[k] = false;
+        });
+
+        // Boutons virtuels
+        const bindBtn = (id, code) => {
+           const btn = document.getElementById(id);
+           const press = (e) => { e.preventDefault(); keys[code] = true; canvas.focus(); };
+           const release = (e) => { e.preventDefault(); keys[code] = false; };
+           btn.addEventListener('mousedown', press);
+           btn.addEventListener('mouseup', release);
+           btn.addEventListener('mouseleave', release);
+           btn.addEventListener('touchstart', press);
+           btn.addEventListener('touchend', release);
+        };
+        bindBtn('btnUp', 'ArrowUp');
+        bindBtn('btnDown', 'ArrowDown');
+        bindBtn('btnLeft', 'ArrowLeft');
+        bindBtn('btnRight', 'ArrowRight');
 
         const car = {
-          x: 250, y: 80,
+          x: 280, y: 80,
           width: 24, height: 12,
           angle: 0, speed: 0,
-          maxSpeed: 7, acceleration: 0.15,
-          friction: 0.04, grassFriction: 0.3,
-          rotationSpeed: 0.06
+          maxSpeed: 7, acceleration: 0.25,
+          friction: 0.05, grassFriction: 0.15,
+          rotationSpeed: 0.08
         };
 
         const track = {
-          cx1: 250, cy1: 200, r1: 120,
-          cx2: 550, cy2: 200, r2: 120,
-          thickness: 60
+          cx1: 280, cy1: 200, r: 120,
+          cx2: 520, cy2: 200, r: 120,
+          thickness: 80
         };
 
         function onTrack(x, y) {
           const d1 = Math.hypot(x - track.cx1, y - track.cy1);
           const d2 = Math.hypot(x - track.cx2, y - track.cy2);
           
-          const onCircle1 = Math.abs(d1 - track.r1) < track.thickness / 2;
-          const onCircle2 = Math.abs(d2 - track.r2) < track.thickness / 2;
+          const onCircle1 = Math.abs(d1 - track.r) < track.thickness / 2;
+          const onCircle2 = Math.abs(d2 - track.r) < track.thickness / 2;
           
           return onCircle1 || onCircle2;
         }
@@ -523,19 +549,19 @@ with tab_surprise:
           ctx.strokeStyle = "#334155";
           
           ctx.beginPath();
-          ctx.arc(track.cx1, track.cy1, track.r1, 0, Math.PI * 2);
+          ctx.arc(track.cx1, track.cy1, track.r, 0, Math.PI * 2);
           ctx.stroke();
           
           ctx.beginPath();
-          ctx.arc(track.cx2, track.cy2, track.r2, 0, Math.PI * 2);
+          ctx.arc(track.cx2, track.cy2, track.r, 0, Math.PI * 2);
           ctx.stroke();
           
           // Ligne de depart
           ctx.strokeStyle = "white";
           ctx.lineWidth = 4;
           ctx.beginPath();
-          ctx.moveTo(track.cx1, track.cy1 - track.r1 - track.thickness/2);
-          ctx.lineTo(track.cx1, track.cy1 - track.r1 + track.thickness/2);
+          ctx.moveTo(track.cx1, track.cy1 - track.r - track.thickness/2);
+          ctx.lineTo(track.cx1, track.cy1 - track.r + track.thickness/2);
           ctx.stroke();
         }
 
@@ -566,7 +592,7 @@ with tab_surprise:
           if (keys["ArrowUp"]) car.speed += car.acceleration;
           if (keys["ArrowDown"]) car.speed -= car.acceleration;
           
-          if (Math.abs(car.speed) > 0.1) {
+          if (Math.abs(car.speed) > 0.2) {
             const dir = car.speed > 0 ? 1 : -1;
             if (keys["ArrowLeft"]) car.angle -= car.rotationSpeed * dir;
             if (keys["ArrowRight"]) car.angle += car.rotationSpeed * dir;
@@ -605,4 +631,4 @@ with tab_surprise:
     </div>
     """
     
-    components.html(game_html, height=450, scrolling=False)
+    components.html(game_html, height=600, scrolling=False)
