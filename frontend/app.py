@@ -2,75 +2,290 @@
 from __future__ import annotations
 
 import os
-
+import datetime
 import httpx
 import pandas as pd
 import streamlit as st
 
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
+AIRFLOW_URL = os.environ.get("AIRFLOW_URL", "http://localhost:8080")
+MLFLOW_URL = os.environ.get("MLFLOW_URL", "http://localhost:5000")
 
-st.set_page_config(page_title="Prédiction Prix Voiture", layout="wide")
-st.title("🚗 Estimateur de Prix de Voitures d'Occasion")
+st.set_page_config(page_title="AutoPrice Pro", layout="wide", initial_sidebar_state="collapsed")
 
-home_tab, predict_tab = st.tabs(["Accueil", "Prédiction"])
+# Initialisation de l'historique dans la session
+if "prediction_history" not in st.session_state:
+    st.session_state.prediction_history = []
 
-with home_tab:
-    st.markdown("### Par Johan Ribeiro Lamy")
-    st.header("Bienvenue sur l'Estimateur de Prix ! 👋")
+def check_service(url: str, name: str) -> dict:
+    try:
+        # Pour mlflow et airflow on teste juste la racine ou /health
+        # On met un timeout très court pour ne pas bloquer
+        endpoint = f"{url}/health" if name == "API" else url
+        response = httpx.get(endpoint, timeout=2.0)
+        is_up = response.status_code < 500
+        return {"name": name, "status": "🟢 En ligne" if is_up else "🔴 Erreur", "url": url}
+    except Exception:
+        return {"name": name, "status": "🔴 Hors ligne", "url": url}
+
+# --- CSS CUSTOM PREMIUM AUTO ---
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #0b0f19;
+        color: #e2e8f0;
+    }
+    
+    /* Background global plus sombre */
+    .stApp {
+        background: radial-gradient(circle at top, #1e1e38 0%, #0b0f19 100%);
+    }
+
+    /* Masquer le header/footer par défaut de Streamlit */
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* Glassmorphism Cards */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .glass-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(139, 92, 246, 0.3); /* Accent violet/bleu */
+    }
+
+    /* En-tête de la page (Titre principal) */
+    .main-title {
+        background: linear-gradient(135deg, #00E5FF, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        font-size: 3rem;
+        margin-bottom: 0;
+        padding-bottom: 0;
+        text-shadow: 0px 0px 20px rgba(139, 92, 246, 0.3);
+    }
+    
+    /* Sous-titre */
+    .sub-title {
+        color: #94a3b8;
+        font-size: 1.1rem;
+        font-weight: 300;
+        margin-top: 0;
+        margin-bottom: 2rem;
+    }
+
+    /* Style des onglets Streamlit */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: rgba(255,255,255,0.05);
+        border-radius: 8px 8px 0px 0px;
+        gap: 1px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border: 1px solid rgba(255,255,255,0.05);
+        border-bottom: none;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(180deg, rgba(139,92,246,0.1) 0%, rgba(255,255,255,0.05) 100%);
+        color: #fff;
+        border-top: 2px solid #8b5cf6;
+    }
+
+    /* Style des inputs Streamlit (Formulaire) */
+    .stTextInput > div > div > input, .stNumberInput > div > div > input, .stSelectbox > div > div > div {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+    }
+    .stTextInput > div > div > input:focus, .stNumberInput > div > div > input:focus, .stSelectbox > div > div > div:focus {
+        border-color: #8b5cf6 !important;
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.3) !important;
+    }
+
+    /* Bouton principal Streamlit (Submit) */
+    .stButton > button {
+        background: linear-gradient(135deg, #8b5cf6, #3b82f6) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 2rem !important;
+        transition: all 0.3s ease !important;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4) !important;
+    }
+
+    /* Boutons HTML custom (Airflow/MLflow) */
+    .custom-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 20px;
+        margin: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .custom-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: #06b6d4;
+        box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        transform: translateY(-2px);
+    }
+    .custom-btn.airflow { border-left: 3px solid #00E5FF; }
+    .custom-btn.mlflow { border-left: 3px solid #3b82f6; }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- HEADER CUSTOM ---
+col_title, col_btns = st.columns([2, 1])
+with col_title:
+    st.markdown('<h1 class="main-title">🏎️ AutoPrice Pro</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">Plateforme d\\'estimation intelligente par Johan Ribeiro Lamy</p>', unsafe_allow_html=True)
+
+with col_btns:
+    st.markdown(f"""
+        <div style="text-align: right; margin-top: 15px;">
+            <a href="{AIRFLOW_URL}" target="_blank" class="custom-btn airflow">🌪️ Airflow</a>
+            <a href="{MLFLOW_URL}" target="_blank" class="custom-btn mlflow">📊 MLflow</a>
+        </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
+
+# --- ONGLETS ---
+tab_home, tab_predict, tab_history = st.tabs(["🏠 Accueil & État", "🔮 Prédiction", "📋 Historique"])
+
+with tab_home:
     st.markdown("""
-    Cette application a pour but d'**estimer le prix de revente d'une voiture d'occasion** sur le marché indien, en se basant sur ses caractéristiques techniques et son historique.
+        <div class="glass-card">
+            <h3>Bienvenue sur AutoPrice Pro</h3>
+            <p>Ce système de machine learning estime la valeur de revente de véhicules sur le marché en analysant leurs caractéristiques et leur historique.</p>
+            <ul>
+                <li><strong>Modèle prédictif</strong> entraîné sur des milliers de transactions réelles.</li>
+                <li><strong>Pipeline automatisé</strong> via Airflow pour le réentraînement.</li>
+                <li><strong>Tracking des modèles</strong> assuré par MLflow.</li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)
     
-    ### 🎯 Objectif
-    Grâce à un modèle de Machine Learning entraîné sur des milliers d'annonces réelles, cette application permet :
-    - Aux **vendeurs** de fixer un prix juste et compétitif.
-    - Aux **acheteurs** de vérifier s'ils font une bonne affaire.
-    - Aux **concessionnaires** d'avoir une première base d'estimation rapide.
+    st.markdown("### 🚦 État des Services")
     
-    ### 🚀 Comment ça marche ?
-    1. Rendez-vous dans l'onglet **Prédiction**.
-    2. Remplissez le formulaire avec les caractéristiques du véhicule (marque, kilométrage, puissance, etc.).
-    3. Cliquez sur "Estimer le prix". L'application interrogera notre API intelligente pour calculer la valeur du véhicule en temps réel !
+    col_api, col_ml, col_air = st.columns(3)
     
-    *Ce projet est une démonstration d'orchestration MLOps.*
-    """)
+    # Bouton de rafraichissement invisible qui force le rerun
+    if st.button("🔄 Rafraîchir l'état", key="refresh_btn"):
+        pass
 
-with predict_tab:
-    st.subheader("Entrez les caractéristiques de la voiture")
+    with st.spinner("Vérification des services..."):
+        status_api = check_service(API_URL, "API")
+        status_mlflow = check_service(MLFLOW_URL, "MLflow")
+        status_airflow = check_service(AIRFLOW_URL, "Airflow")
+
+    with col_api:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <h4>🚀 {status_api['name']}</h4>
+            <p style="font-size: 1.5rem; margin: 10px 0;">{status_api['status']}</p>
+            <small style="color: #64748b;">{status_api['url']}</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col_ml:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <h4>📊 {status_mlflow['name']}</h4>
+            <p style="font-size: 1.5rem; margin: 10px 0;">{status_mlflow['status']}</p>
+            <small style="color: #64748b;">{status_mlflow['url']}</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col_air:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <h4>🌪️ {status_airflow['name']}</h4>
+            <p style="font-size: 1.5rem; margin: 10px 0;">{status_airflow['status']}</p>
+            <small style="color: #64748b;">{status_airflow['url']}</small>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+with tab_predict:
+    st.markdown("### ⚙️ Caractéristiques du véhicule")
 
     with st.form("predict_form"):
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("### Informations Générales")
-            brand = st.text_input("Marque (ex: Toyota)", value="Toyota")
-            model = st.text_input("Modèle (ex: Corolla)", value="Corolla")
-            year = st.number_input("Année de fabrication", min_value=1990, max_value=2025, value=2015, step=1)
-            registration_age = st.number_input("Âge d'immatriculation (années)", min_value=0, max_value=40, value=5, step=1)
-            color = st.text_input("Couleur (ex: White)", value="White")
-            city = st.text_input("Ville (ex: Mumbai)", value="Mumbai")
+            st.markdown("#### Identité")
+            brand = st.text_input("Marque", value="Toyota", help="Ex: Toyota, Honda, BMW")
+            model = st.text_input("Modèle", value="Corolla", help="Ex: Corolla, Civic, X5")
+            year = st.number_input("Année de fabrication", min_value=1990, max_value=2025, value=2018, step=1)
+            registration_age = st.number_input("Âge d'immatriculation (années)", min_value=0, max_value=40, value=6, step=1)
+            color = st.text_input("Couleur", value="White")
+            city = st.text_input("Ville", value="Mumbai")
             
         with col2:
-            st.markdown("### Mécanique & Performances")
-            engine_cc = st.number_input("Cylindrée (Engine CC)", min_value=500.0, max_value=8000.0, value=1200.0)
-            horsepower = st.number_input("Puissance (Horsepower)", min_value=30.0, max_value=1000.0, value=85.0)
-            mileage_kmpl = st.number_input("Consommation (Mileage kmpl)", min_value=1.0, max_value=50.0, value=15.5)
-            kms_driven = st.number_input("Kilométrage parcouru", min_value=0.0, max_value=1000000.0, value=60000.0)
-            fuel_type = st.selectbox("Type de carburant", ["Petrol", "Diesel", "CNG", "LPG", "Electric"])
+            st.markdown("#### Mécanique")
+            engine_cc = st.number_input("Cylindrée (CC)", min_value=500.0, max_value=8000.0, value=1500.0)
+            horsepower = st.number_input("Puissance (HP)", min_value=30.0, max_value=1000.0, value=110.0)
+            mileage_kmpl = st.number_input("Consommation (km/L)", min_value=1.0, max_value=50.0, value=18.5)
+            kms_driven = st.number_input("Kilométrage", min_value=0.0, max_value=1000000.0, value=45000.0)
+            fuel_type = st.selectbox("Carburant", ["Petrol", "Diesel", "CNG", "LPG", "Electric"])
             transmission = st.selectbox("Transmission", ["Manual", "Automatic"])
             
         with col3:
-            st.markdown("### Administratif & Configuration")
+            st.markdown("#### Historique & Administratif")
             seats = st.number_input("Nombre de sièges", min_value=2, max_value=10, value=5, step=1)
             number_of_doors = st.number_input("Nombre de portes", min_value=2, max_value=5, value=5, step=1)
-            owner_type = st.selectbox("Type de propriétaire", ["First", "Second", "Third", "Fourth & Above"])
+            owner_type = st.selectbox("Propriétaire", ["First", "Second", "Third", "Fourth & Above"])
             
-            insurance_valid = st.checkbox("Assurance valide", value=True)
-            service_history = st.checkbox("Historique de service complet", value=True)
-            tax_paid = st.checkbox("Taxe payée", value=True)
-            accidents = st.number_input("Nombre d'accidents", min_value=0, max_value=10, value=0, step=1)
+            st.markdown("<br>", unsafe_allow_html=True)
+            insurance_valid = st.checkbox("✅ Assurance valide", value=True)
+            service_history = st.checkbox("🛠️ Carnet d'entretien complet", value=True)
+            tax_paid = st.checkbox("💰 Taxes à jour", value=True)
+            accidents = st.number_input("💥 Nombre d'accidents", min_value=0, max_value=10, value=0, step=1)
 
-        st.markdown("---")
-        submitted = st.form_submit_button("💰 Estimer le prix", use_container_width=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        submitted = st.form_submit_button("Lancer l'estimation", use_container_width=True)
 
     if submitted:
         payload = {
@@ -95,22 +310,53 @@ with predict_tab:
             "City": city
         }
         
-        with st.spinner("Demande à l'API en cours..."):
+        with st.spinner("Analyse des données par le modèle..."):
             try:
                 response = httpx.post(f"{API_URL}/predict", json=payload, timeout=10.0)
                 response.raise_for_status()
                 result = response.json()
                 
-                st.success("Prédiction réussie !")
                 price_inr = result['price']
-                price_eur = price_inr * 0.0112 # Conversion approximative (1 INR ≈ 0.0112 EUR)
+                price_eur = price_inr * 0.0112 # Conversion approximative
                 
-                col_inr, col_eur = st.columns(2)
-                with col_inr:
-                    st.metric(label="Prix Estimé (INR)", value=f"{price_inr:,.2f} ₹")
-                with col_eur:
-                    st.metric(label="Prix Estimé (EUR)", value=f"{price_eur:,.2f} €")
+                # Ajout à l'historique
+                st.session_state.prediction_history.insert(0, {
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "vehicule": f"{brand} {model} ({year})",
+                    "prix_inr": f"{price_inr:,.0f} ₹",
+                    "prix_eur": f"{price_eur:,.0f} €",
+                    "details": f"{kms_driven}km • {transmission} • {fuel_type}"
+                })
+                # Garder seulement les 10 derniers
+                st.session_state.prediction_history = st.session_state.prediction_history[:10]
+
+                st.markdown(f"""
+                <div class="glass-card" style="border: 1px solid #00E5FF; text-align: center; background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(139,92,246,0.1));">
+                    <h2 style="color: #fff; margin-bottom: 20px;">Estimation réussie 🎉</h2>
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+                        <div>
+                            <p style="color: #94a3b8; font-size: 1.2rem; margin: 0;">Prix Estimé (INR)</p>
+                            <p class="metric-value">{price_inr:,.0f} ₹</p>
+                        </div>
+                        <div>
+                            <p style="color: #94a3b8; font-size: 1.2rem; margin: 0;">Équivalent (EUR)</p>
+                            <p class="metric-value">{price_eur:,.0f} €</p>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
             except httpx.HTTPError as exc:
                 st.error(f"Appel à l'API impossible : {exc}")
             except KeyError:
                 st.error(f"Réponse inattendue de l'API : {result}")
+
+with tab_history:
+    st.markdown("### 🕒 Historique des estimations (session locale)")
+    
+    if not st.session_state.prediction_history:
+        st.info("Aucune estimation n'a été réalisée durant cette session.")
+    else:
+        df_history = pd.DataFrame(st.session_state.prediction_history)
+        df_history.columns = ["Date / Heure", "Véhicule", "Prix (INR)", "Prix (EUR)", "Détails"]
+        st.dataframe(df_history, use_container_width=True, hide_index=True)
