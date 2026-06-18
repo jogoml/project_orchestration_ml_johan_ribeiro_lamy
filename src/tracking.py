@@ -56,7 +56,22 @@ def log_metrics(metrics: dict) -> None:
 
 def log_model(model, artifact_path: str = "model", registered_model_name: str | None = None) -> None:
     """Logger un modele scikit-learn et l'enregistrer dans le Model Registry."""
-    mlflow.sklearn.log_model(model, artifact_path, registered_model_name=registered_model_name)
+    # skops_trusted_types : declarer explicitement les types autorises (XGBoost, LightGBM, numpy)
+    # pour satisfaire la validation de securite de MLflow >= 2.12
+    trusted_types = [
+        "numpy.dtype",
+        "numpy.ndarray",
+        "xgboost.core.Booster",
+        "xgboost.sklearn.XGBRegressor",
+        "lightgbm.basic.Booster",
+        "lightgbm.sklearn.LGBMRegressor",
+    ]
+    mlflow.sklearn.log_model(
+        model,
+        artifact_path,
+        registered_model_name=registered_model_name,
+        skops_trusted_types=trusted_types,
+    )
 
 
 def log_scatter_plot(y_true, y_pred, title: str = "Vrai Prix vs Prix Predit", filename: str = "scatter.png") -> None:
