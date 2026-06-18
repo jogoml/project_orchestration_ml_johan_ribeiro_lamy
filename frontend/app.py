@@ -577,8 +577,12 @@ with tab_surprise:
         function update() {
           let currentFriction = onTrack(car.x, car.y) ? car.friction : car.grassFriction;
 
-          if (keys["ArrowUp"]) car.speed += car.acceleration;
-          if (keys["ArrowDown"]) car.speed -= car.acceleration;
+          // Eviter le conflit si on appuie sur Haut et Bas en même temps
+          if (keys["ArrowUp"] && !keys["ArrowDown"]) {
+              car.speed += car.acceleration;
+          } else if (keys["ArrowDown"] && !keys["ArrowUp"]) {
+              car.speed -= car.acceleration;
+          }
           
           if (Math.abs(car.speed) > 0.2) {
             const dir = car.speed > 0 ? 1 : -1;
