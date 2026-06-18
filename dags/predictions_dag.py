@@ -29,23 +29,27 @@ default_args = {
 def task_send_predictions(**context) -> None:
     """Echantillonner N_PREDICTIONS lignes et les envoyer a l'API /predict."""
     import httpx
-
-    from src.config import TARGET
     from src.data import load_data
 
     # L'API tourne par defaut sur http://api:8000 en docker
     api_url = os.environ.get("API_URL", "http://api:8000")
 
-    # On retire la colonne cible : l'API ne recoit que les features.
     df = load_data()
-    if TARGET in df.columns:
-        features = df.drop(columns=[TARGET])
-    else:
-        features = df
 
-    # Echantillonner N_PREDICTIONS lignes en s'assurant qu'il n'y a pas de valeurs nulles
-    # qui feraient planter la validation Pydantic de l'API (erreur 422)
-    sample = features.dropna().sample(n=N_PREDICTIONS)
+    # Colonnes attendues par le schema Pydantic de l'API (src/api.py -> Features)
+    API_COLUMNS = [
+        "Year", "Mileage_kmpl", "Engine_CC", "Horsepower", "Kms_Driven",
+        "Insurance_Valid", "Service_History", "Accidents", "Tax_Paid",
+        "Number_of_Doors", "Seats", "Registration_Age",
+        "Brand", "Model", "Fuel_Type", "Transmission", "Owner_Type",
+        "Color", "City",
+    ]
+
+    # On ne garde que les colonnes attendues par l'API et on supprime les lignes incompletes
+    features = df[API_COLUMNS].dropna()
+
+    # Echantillonner N_PREDICTIONS lignes
+    sample = features.sample(n=N_PREDICTIONS)
 
     # Ouvrir un client httpx sur l'API_URL, verifier /health,
     # puis pour chaque ligne envoyer POST /predict avec le payload JSON.
