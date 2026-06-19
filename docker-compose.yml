@@ -20,6 +20,8 @@ services:
       - /app/mlartifacts
       - --allowed-hosts
       - "*"
+      - --cors-allowed-origins
+      - "*"
     ports:
       - "5000:5000"
     volumes:
