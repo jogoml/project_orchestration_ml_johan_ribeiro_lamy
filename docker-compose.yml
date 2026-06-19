@@ -6,7 +6,20 @@ services:
       context: .
       dockerfile: docker/Dockerfile.mlflow
     container_name: mlflow_server
-    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root mlflow-artifacts:/ --serve-artifacts --allowed-hosts "*"
+    command: 
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --backend-store-uri
+      - sqlite:///mlflow.db
+      - --serve-artifacts
+      - --artifacts-destination
+      - /app/mlartifacts
+      - --allowed-hosts
+      - "*"
     ports:
       - "5000:5000"
     volumes:
